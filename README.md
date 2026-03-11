@@ -1,2 +1,21 @@
-# api-rest-for-ecommerce
-Basic Backend RESTful API project for an e-commerce platform. 
+# RESTful API para Ecommerce
+
+🇪🇸 **Español** | 🇺🇸 [English](README.en.md)
+
+## Tabla de Contenidos
+
+- [Contexto del Proyecto](#contexto-del-proyecto)
+  - [Solución Propuesta](#solución-propuesta)
+  - [Dificultades Enfrentadas](#dificultades-enfrentadas)
+- [Pre-requisitos](#pre-requisitos)
+
+## Contexto del Proyecto
+
+Este proyecto fue desarrollado como un Entregable del Trabajo Práctico Individual (TPI) para el curso de **Ingeniería de Software II** en el marco de la carrera de *Ingeniería en Informática* de la *Universidad de Buenos Aires (UBA)*. Este trabajo fue realizado durante el primer cuatrimestre de 2026.
+El objetivo fue obtener experiencia hands-on con los primeros conceptos del curso al desarrollar una API RESTful básica para una plataforma de E-Commerce.
+
+### Solución Propuesta
+
+### Dificultades Enfrentadas
+
+## Pre-requisitos
