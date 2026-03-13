@@ -16,6 +16,8 @@ The objective was to have a starting hands-on experience with the first concepts
 
 ### Proposed Solution
 
+The RESTful API is implemented in Python using [FastAPI](https://fastapi.tiangolo.com/). The API uses a [PostgreSQL](https://www.postgresql.org/) database to save the data. Both services are orquested using Docker Compose. The `postgres` service gets the image `postgres:16` directly from Dockers' Hub, and the image for the `api` service is defined in the [Dockerfile](Dockerfile).
+
 ### Faced Difficulties
 
 ## Requirements
