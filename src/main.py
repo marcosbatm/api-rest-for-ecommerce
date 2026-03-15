@@ -38,6 +38,13 @@ class Cart(BaseModel):
     items: list[CartItem]
     totalPrice: float = Field(ge=0, description="Sum of unitPrice of all items, in USD")
 
+class ErrorResponse(BaseModel):
+    type: str = "about:blank"
+    title: str
+    status: int
+    detail: str
+    instance: str
+
 app = FastAPI()
 
 @app.get("/")
