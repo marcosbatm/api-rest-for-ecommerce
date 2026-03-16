@@ -1,49 +1,8 @@
 import os
-from datetime import datetime
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
-
-class CreateProductRequest(BaseModel):
-    sellerId: int
-    title: str
-    description: str
-    price: float = Field(ge=0.01)
-
-class UpdateProductRequest(BaseModel):
-    title: str
-    description: str
-    price: float = Field(ge=0.01)
-
-class AddCartRequest(BaseModel):
-    productId: int
-
-class Product(BaseModel):
-    id: int
-    sellerId: int
-    title: str
-    description: str
-    price: float = Field(ge=0.01, description="Price in USD, rounded to 2 decimal places")
-    createdAt: datetime
-    updatedAt: datetime
-
-class CartItem(BaseModel):
-    id: int
-    productId: int
-    title: str
-    unitPrice: float = Field(ge=0.01, description="Snapshot price in USD when item was added to cart, rounded to 2 decimal places")
-    addedAt: datetime
-
-class Cart(BaseModel):
-    userId: int
-    items: list[CartItem]
-    totalPrice: float = Field(ge=0, description="Sum of unitPrice of all items, in USD")
-
-class ErrorResponse(BaseModel):
-    type: str = "about:blank"
-    title: str
-    status: int
-    detail: str
-    instance: str
+from src.models.requests import CreateProductRequest, UpdateProductRequest, AddCartRequest
+from src.models.ecommerce import Product, CartItem, Cart
 
 app = FastAPI()
 
