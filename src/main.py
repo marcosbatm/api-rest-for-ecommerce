@@ -47,11 +47,6 @@ class ErrorResponse(BaseModel):
 
 app = FastAPI()
 
-@app.get("/")
-def read_root(product: Product, cartItem: CartItem, cart: Cart):
-    service_name = os.getenv("SERVICE_NAME", "FastAPI")
-    return {"Hello": "World", "From": service_name}
-
 @app.post("/products", summary="Create a new product")
 def write_product(product: CreateProductRequest):
     return {"message": "Endpoint to create a new product"}
