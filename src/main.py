@@ -2,16 +2,16 @@ import os
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from src.models.requests import CreateProductRequest, UpdateProductRequest, AddCartRequest
-from src.models.ecommerce import Product, CartItem, Cart
+from src.models.responses import CreateProductResponse, ErrorResponse, GetProductsResponse
 
 app = FastAPI()
 
 @app.post("/products", summary="Create a new product")
-def write_product(product: CreateProductRequest):
+def write_product(product: CreateProductRequest) -> CreateProductResponse:
     return {"message": "Endpoint to create a new product"}
 
 @app.get("/products", summary="Retrieve all products", description="Returns all products ordered by id ascending")
-def read_products():
+def read_products() -> GetProductsResponse:
     return {"message": "Endpoint to read all products"}
 
 @app.get("/products/{id}", summary="Retrieve a product by ID")

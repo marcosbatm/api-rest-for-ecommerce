@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from src.models.ecommerce import Product
 
 class ErrorResponse(BaseModel):
     type: str = "about:blank"
@@ -6,3 +7,9 @@ class ErrorResponse(BaseModel):
     status: int
     detail: str
     instance: str
+
+class CreateProductResponse(BaseModel):
+    data: Product
+
+class GetProductsResponse(BaseModel):
+    data: list[Product]
