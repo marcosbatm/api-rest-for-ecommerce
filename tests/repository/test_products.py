@@ -1,4 +1,3 @@
-import pytest
 from src.database.database import Repository
 
 
