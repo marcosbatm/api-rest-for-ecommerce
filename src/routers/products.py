@@ -1,8 +1,7 @@
 from fastapi import APIRouter, status, HTTPException, Request, Depends
 
 from src.models.errors import ErrorResponse
-from src.models.product import CreateProductRequest, CreateProductResponse
-from src.models.errors import GetProductsResponse
+from src.models.product import CreateProductRequest, CreateProductResponse, GetProductsResponse
 from src.service.backend import EcommerceBackend
 
 products_router = APIRouter()
