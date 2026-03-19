@@ -9,6 +9,7 @@ from fastapi.openapi.utils import get_openapi
 
 from src.models.errors import ErrorResponse
 from src.routers.products import products_router
+from src.routers.carts import carts_router
 # -------------
 
 from src.database.database import Repository
@@ -71,4 +72,5 @@ def custom_openapi():
 
 
 app.include_router(products_router)
+app.include_router(carts_router)
 app.openapi = custom_openapi

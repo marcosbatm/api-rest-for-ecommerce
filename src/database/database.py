@@ -1,4 +1,5 @@
 import time
+from src.models.cart import Cart
 from src.models.product import CreateProductRequest, Product, UpdateProductRequest
 
 
@@ -63,3 +64,9 @@ class Repository:
             return False
         del self.productDatabase[id]
         return True
+
+    # CART METHODS:
+
+    def get_cart(self, userId: int) -> Cart:
+        # TODO: Implementar lógica real de carrito, con persistencia y manejo de items.
+        return Cart(userId=userId, items=[], totalPrice=0.0)

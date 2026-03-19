@@ -1,5 +1,6 @@
 from src.database.database import Repository
 from src.models.product import CreateProductRequest, Product, UpdateProductRequest
+from src.models.cart import Cart
 
 
 class EcommerceBackend:
@@ -29,3 +30,8 @@ class EcommerceBackend:
 
     def delete_product(self, id: int) -> bool:
         return self.database.delete_product(id)
+
+    # CART METHODS:
+
+    def read_cart(self, userId: int) -> Cart:
+        return self.database.get_cart(userId)
