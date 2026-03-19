@@ -6,6 +6,7 @@ from src.models.product import (
     CreateProductRequest,
     ProductResponse,
     GetProductsResponse,
+    UpdateProductRequest,
 )
 from src.service.backend import EcommerceBackend
 
@@ -110,13 +111,52 @@ def read_product(
     return ProductResponse(data=product)
 
 
-# @products_router.put(
-#     "/products/{id}",
-#     summary="Full update of a product by ID",
-#     description="Replaces all mutable fields of a product. All fields in the request body are required.",
-# )
-# def update_product(id: int, product: UpdateProductRequest):
-#     return {"message": "Endpoint to update a specific product by id", "id": id}
+@products_router.put(
+    "/products/{id}",
+    response_model=ProductResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Full update of a product by ID",
+    response_description="Product updated successfully",
+    description="Replaces all mutable fields of a product. All fields in the request body are required.",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Bad request error",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Product not found",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        },
+    },
+)
+def update_product(
+    id: int,
+    product: UpdateProductRequest,
+    backend: EcommerceBackend = Depends(get_backend),
+) -> ProductResponse:
+    product = backend.update_product(id, product)
+    if not product:
+        # TODO: Esto tira 400, pero debe ser 404.
+        # O crear una excepción personalizada (ProductNotFoundError)
+        # O devolver directamente la JSON Response con el error?
+        raise RequestValidationError(
+            [
+                {
+                    "loc": ["path", "id"],
+                    "msg": f"Product with id {id} not found",
+                    "type": "value_error",
+                }
+            ]
+        )
+    return ProductResponse(data=product)
 
 
 # @products_router.delete("/products/{id}", summary="Delete a product by ID")

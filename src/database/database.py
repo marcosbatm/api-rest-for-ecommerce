@@ -1,5 +1,5 @@
 import time
-from src.models.product import CreateProductRequest, Product
+from src.models.product import CreateProductRequest, Product, UpdateProductRequest
 
 
 class Repository:
@@ -38,3 +38,21 @@ class Repository:
 
     def get_all_products(self) -> list[Product]:
         return list(self.productDatabase.values())
+
+    def update_product(
+        self, id: int, productRequest: UpdateProductRequest
+    ) -> Product | None:
+        existing_product = self.productDatabase.get(id)
+        if not existing_product:
+            return None
+        updated_product = Product(
+            id=id,
+            sellerId=existing_product.sellerId,
+            title=productRequest.title,
+            description=productRequest.description,
+            price=productRequest.price,
+            createdAt=existing_product.createdAt,
+            updatedAt=time.time(),
+        )
+        self.productDatabase[id] = updated_product
+        return updated_product

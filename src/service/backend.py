@@ -1,5 +1,5 @@
 from src.database.database import Repository
-from src.models.product import CreateProductRequest, Product
+from src.models.product import CreateProductRequest, Product, UpdateProductRequest
 
 
 class EcommerceBackend:
@@ -19,3 +19,10 @@ class EcommerceBackend:
 
     def read_product(self, id: int) -> Product | None:
         return self.database.get_product(id)
+
+    def update_product(
+        self, id: int, productRequest: UpdateProductRequest
+    ) -> Product | None:
+        # Logica de negocio: round price to 2 decimal places
+        productRequest.price = round(productRequest.price, 2)
+        return self.database.update_product(id, productRequest)
