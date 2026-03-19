@@ -3,10 +3,20 @@ from src.models.product import CreateProductRequest, Product
 
 
 class Repository:
-    def __init__(self, config):
-        self.config = config
-        self.productDatabase: dict[int, Product] = {}
-        self.last_product_id = 0
+    """
+    Capa Repository: Encapsula la conexión a la base de datos.
+    Utiliza config para configurar la conexión.
+    Si no recibe config, asume una base de datos en memoria (dict).
+    """
+
+    def __init__(self, config: dict | None):
+        if config is None:
+            self.config = config
+            self.productDatabase: dict[int, Product] = {}
+            self.last_product_id = 0
+        else:
+            # Aquí podríamos implementar la lógica para conectar a una base de datos real
+            raise NotImplementedError("Database connection not implemented yet")
 
     def add_product(self, productRequest: CreateProductRequest) -> Product:
         now = time.time()
