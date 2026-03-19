@@ -1,4 +1,5 @@
-from fastapi import APIRouter, status, HTTPException, Request, Depends
+from fastapi import APIRouter, status, Request, Depends
+from fastapi.exceptions import RequestValidationError
 
 from src.models.errors import ErrorResponse
 from src.models.product import (
@@ -34,15 +35,31 @@ def get_backend(request: Request) -> EcommerceBackend:
     },
 )
 def write_product(
-    product: CreateProductRequest, backend: EcommerceBackend = Depends(get_backend)
+    productRequest: CreateProductRequest,
+    backend: EcommerceBackend = Depends(get_backend),
 ) -> CreateProductResponse:
-    if product.sellerId == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid sellerId",
-            headers={"content-type": "application/problem+json"},
+    if productRequest.sellerId < 0:
+        raise RequestValidationError(
+            [
+                {
+                    "loc": ["body", "sellerId"],
+                    "msg": "sellerId must be a nonnegative integer",
+                    "type": "value_error",
+                }
+            ]
         )
-    return backend.create_product(product)
+    product = backend.create_product(productRequest)
+    if not product:
+        raise RequestValidationError(
+            [
+                {
+                    "loc": ["body"],
+                    "msg": "Failed to create product",
+                    "type": "value_error",
+                }
+            ]
+        )
+    return CreateProductResponse(data=product)
 
 
 @products_router.get(
