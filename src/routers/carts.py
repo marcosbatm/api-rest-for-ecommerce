@@ -2,7 +2,12 @@ from fastapi import APIRouter, status, Request, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from src.models.cart import CartResponse, Cart
+from src.models.cart import (
+    CartItemResponse,
+    CartResponse,
+    Cart,
+    AddProductToCartRequest,
+)
 from src.models.errors import ErrorResponse
 
 # from src.models.carts import
@@ -27,7 +32,7 @@ def get_backend(request: Request) -> EcommerceBackend:
 def read_cart(
     userId: int, backend: EcommerceBackend = Depends(get_backend)
 ) -> CartResponse:
-    cart = backend.read_cart(userId)
+    cart: Cart = backend.read_cart(userId)
     return CartResponse(data=cart)
 
 
@@ -44,16 +49,42 @@ def clear_cart(userId: int, backend: EcommerceBackend = Depends(get_backend)):
     return
 
 
-# @carts_router.post(
-#     "/cart/{userId}/items",
-#     summary="Add product to user's cart",
-#     description="Adds a new cart item with a snapshot of the product's current price and title. Each POST creates an independent item (duplicates allowed).",
-# )
-# def add_item_to_cart(userId: int, item: AddCartRequest):
-#     return {
-#         "message": "Endpoint to add an item to the cart for a specific user by userId",
-#         "userId": userId,
-#     }
+@carts_router.post(
+    "/cart/{userId}/items",
+    summary="Add product to user's cart",
+    description="Adds a new cart item with a snapshot of the product's current price and title. Each POST creates an independent item (duplicates allowed).",
+    response_model=CartItemResponse,
+    status_code=status.HTTP_201_CREATED,
+    response_description="Product added to cart successfully",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Bad request error",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Product not found error",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        },
+    },
+)
+def add_item_to_cart(
+    userId: int,
+    item: AddProductToCartRequest,
+    backend: EcommerceBackend = Depends(get_backend),
+):
+    backend.add_item_to_cart(userId, item)
+    return {
+        "message": "Endpoint to add an item to the cart for a specific user by userId",
+        "userId": userId,
+    }
 
 
 # @carts_router.delete(

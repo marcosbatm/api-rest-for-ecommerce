@@ -27,3 +27,15 @@ class Cart(BaseCart):
 
 class CartResponse(BaseModel):
     data: Cart
+
+
+class AddProductToCartRequest(BaseModel):
+    productId: int
+
+
+class CartItem(BaseCartItem):
+    pass
+
+
+class CartItemResponse(BaseModel):
+    data: CartItem
