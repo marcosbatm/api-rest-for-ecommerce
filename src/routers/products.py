@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status, Request, Depends
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from src.models.errors import ErrorResponse
 from src.models.product import (
@@ -144,17 +145,18 @@ def update_product(
 ) -> ProductResponse:
     product = backend.update_product(id, product)
     if not product:
-        # TODO: Esto tira 400, pero debe ser 404.
-        # O crear una excepción personalizada (ProductNotFoundError)
-        # O devolver directamente la JSON Response con el error?
-        raise RequestValidationError(
-            [
-                {
-                    "loc": ["path", "id"],
-                    "msg": f"Product with id {id} not found",
-                    "type": "value_error",
-                }
-            ]
+        payload = ErrorResponse(
+            type="about:blank",
+            title="Product not found",
+            status=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with id {id} not found",
+            instance=f"/products/{id}",
+        ).model_dump()
+
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content=payload,
+            media_type="application/problem+json",
         )
     return ProductResponse(data=product)
 
