@@ -12,7 +12,10 @@ class EcommerceBackend:
         return self.database.add_product(productRequest)
 
     def read_products(self) -> dict:
-        return {"data": self.database.get_all_products()}
+        data = self.database.get_all_products()
+        # Logica de negocio: ordenar productos por id ascendente
+        data.sort(key=lambda p: p.id)
+        return {"data": data}
 
     def read_product(self, id: int) -> dict:
         product = self.database.get_product(id)
