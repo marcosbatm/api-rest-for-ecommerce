@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from src.database.database import Repository
 from src.models.product import CreateProductRequest, Product
 
@@ -18,11 +20,15 @@ def test_repository_add_product_success():
         price=9.99,
     )
     product: Product = repo.add_product(product_request)
-    assert product.id == 1
-    assert product.sellerId == 1
-    assert product.title == "Test Product"
-    assert product.description == "A product for testing"
-    assert product.price == 9.99
+    # TODO: separar en varios tests unitarios.
+    assert product.id is not None and product.id >= 0 and isinstance(product.id, int)
+    assert product.sellerId == product_request.sellerId
+    assert product.title == product_request.title
+    assert product.description == product_request.description
+    assert product.price == product_request.price
+    assert product.createdAt is not None and isinstance(product.createdAt, datetime)
+    assert product.updatedAt is not None and isinstance(product.updatedAt, datetime)
+    assert product.createdAt == product.updatedAt
 
 
 def test_repository_get_product_success():
@@ -36,11 +42,13 @@ def test_repository_get_product_success():
     added_product: Product = repo.add_product(product_request)
     retrieved_product: Product = repo.get_product(added_product.id)
     assert retrieved_product is not None
-    assert retrieved_product.id == added_product.id
-    assert retrieved_product.sellerId == added_product.sellerId
-    assert retrieved_product.title == added_product.title
-    assert retrieved_product.description == added_product.description
-    assert retrieved_product.price == added_product.price
+    assert retrieved_product == added_product
+
+
+def test_repository_get_invalid_product():
+    repo = Repository(config=None)
+    retrieved_product = repo.get_product(1)  # ID que no existe
+    assert retrieved_product is None
 
 
 def test_repository_get_all_products_success():
@@ -67,3 +75,7 @@ def test_repository_get_all_products_success():
     assert len(retrieved_products) == len(product_requests)
     for prod in products:
         assert any(rp == prod for rp in retrieved_products)
+
+
+# def test_repository_persists_data():
+#     pass
