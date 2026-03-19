@@ -96,14 +96,39 @@ def add_item_to_cart(
         )
 
 
-# @carts_router.delete(
-#     "/cart/{userId}/items/{cartItemId}",
-#     summary="Delete an item from a user's cart",
-#     description="Removes a specific item from the user's cart. The item must belong to the specified user.",
-# )
-# def remove_item_from_cart(userId: int, cartItemId: int):
-#     return {
-#         "message": "Endpoint to remove an item from the cart for a specific user by userId and cartItemId",
-#         "userId": userId,
-#         "cartItemId": cartItemId,
-#     }
+@carts_router.delete(
+    "/cart/{userId}/items/{cartItemId}",
+    summary="Delete an item from a user's cart",
+    description="Removes a specific item from the user's cart. The item must belong to the specified user.",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_description="Cart item deleted successfully",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Cart item not found in user's cart",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        }
+    },
+)
+def remove_item_from_cart(
+    userId: int, cartItemId: int, backend: EcommerceBackend = Depends(get_backend)
+):
+    try:
+        backend.remove_item_from_cart_or_fail(userId, cartItemId)
+        return
+    except KeyError:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content=ErrorResponse(
+                type="about:blank",
+                title="Cart item not found",
+                status=status.HTTP_404_NOT_FOUND,
+                detail=f"Cart item with id {cartItemId} not found in user {userId}'s cart",
+                instance=f"/cart/{userId}/items/{cartItemId}",
+            ).model_dump(),
+            media_type="application/problem+json",
+        )

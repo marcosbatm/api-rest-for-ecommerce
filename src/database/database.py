@@ -77,13 +77,15 @@ class Repository:
         return True
 
     # CART METHODS:
-
-    def get_cart_snapshot(self, userId: int) -> Cart:
-        # TODO: Implementar lógica real de carrito, con persistencia y manejo de items.
+    def __get_cart_or_create(self, userId: int) -> Cart:
         cart = self.cartDatabase.get(userId)
         if not cart:
             cart = Cart(userId=userId, items=[], totalPrice=0.0)
             self.cartDatabase[userId] = cart
+        return cart
+
+    def get_cart_snapshot(self, userId: int) -> Cart:
+        cart = self.__get_cart_or_create(userId)
         return cart.model_copy(deep=True)
 
     def clear_cart(self, userId: int) -> None:
@@ -93,7 +95,7 @@ class Repository:
     def add_snapshot_to_cart(self, userId: int, product_snapshot: Product) -> CartItem:
         cart = self.cartDatabase.get(userId)
         if not cart:
-            cart = Cart(userId=userId, items=[], totalPrice=0.0)
+            cart = Cart(userId=userId, items={}, totalPrice=0.0)
 
         new_item = CartItem(
             id=self.last_item_id + 1,
@@ -103,8 +105,13 @@ class Repository:
             addedAt=time.time(),
         )
 
-        cart.items.append(new_item)
+        cart.items[new_item.id] = new_item
         cart.totalPrice += new_item.unitPrice
         self.cartDatabase[userId] = cart
         self.last_item_id += 1
         return new_item
+
+    def remove_item_from_cart_or_fail(self, userId: int, cartItemId: int) -> None:
+        cart = self.__get_cart_or_create(userId)
+        removed_item = cart.items.pop(cartItemId)  # Si falla lanza KeyError
+        cart.totalPrice -= removed_item.unitPrice

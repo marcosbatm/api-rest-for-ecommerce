@@ -23,7 +23,7 @@ class CartItemResponse(BaseModel):
 
 class BaseCart(BaseModel):
     userId: int
-    items: list[CartItem]
+    items: dict[int, CartItem]
     totalPrice: float = Field(
         ge=0.0, description="Sum of unitPrice of all items, in USD"
     )

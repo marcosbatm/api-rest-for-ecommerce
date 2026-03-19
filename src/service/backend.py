@@ -42,3 +42,6 @@ class EcommerceBackend:
     def add_item_to_cart_or_fail(self, userId: int, productId: int) -> CartItem:
         product_snapshot = self.database.get_product_snapshot_or_fail(productId)
         return self.database.add_snapshot_to_cart(userId, product_snapshot)
+
+    def remove_item_from_cart_or_fail(self, userId: int, cartItemId: int) -> None:
+        self.database.remove_item_from_cart_or_fail(userId, cartItemId)
