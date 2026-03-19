@@ -4,7 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from src.models.errors import ErrorResponse
 from src.models.product import (
     CreateProductRequest,
-    CreateProductResponse,
+    ProductResponse,
     GetProductsResponse,
 )
 from src.service.backend import EcommerceBackend
@@ -19,7 +19,7 @@ def get_backend(request: Request) -> EcommerceBackend:
 
 @products_router.post(
     "/products",
-    response_model=CreateProductResponse,
+    response_model=ProductResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new product",
     response_description="Product created successfully",
@@ -37,7 +37,7 @@ def get_backend(request: Request) -> EcommerceBackend:
 def write_product(
     productRequest: CreateProductRequest,
     backend: EcommerceBackend = Depends(get_backend),
-) -> CreateProductResponse:
+) -> ProductResponse:
     if productRequest.sellerId < 0:
         raise RequestValidationError(
             [
@@ -59,7 +59,7 @@ def write_product(
                 }
             ]
         )
-    return CreateProductResponse(data=product)
+    return ProductResponse(data=product)
 
 
 @products_router.get(
@@ -75,9 +75,39 @@ def read_products(
     return backend.read_products()
 
 
-# @products_router.get("/products/{id}", summary="Retrieve a product by ID")
-# def read_product(id: int):
-#     return {"message": "Endpoint to read a specific product by id", "id": id}
+@products_router.get(
+    "/products/{id}",
+    response_model=ProductResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve a product by ID",
+    response_description="Product retrieved successfully",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Product not found",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        }
+    },
+)
+def read_product(
+    id: int,
+    backend: EcommerceBackend = Depends(get_backend),
+) -> ProductResponse:
+    product = backend.read_product(id)
+    if not product:
+        raise RequestValidationError(
+            [
+                {
+                    "loc": ["path", "id"],
+                    "msg": f"Product with id {id} not found",
+                    "type": "value_error",
+                }
+            ]
+        )
+    return ProductResponse(data=product)
 
 
 # @products_router.put(

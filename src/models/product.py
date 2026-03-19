@@ -22,7 +22,7 @@ class Product(BaseProduct):
     updatedAt: datetime
 
 
-class CreateProductResponse(BaseModel):
+class ProductResponse(BaseModel):
     data: Product
 
 

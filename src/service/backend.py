@@ -17,8 +17,5 @@ class EcommerceBackend:
         data.sort(key=lambda p: p.id)
         return {"data": data}
 
-    def read_product(self, id: int) -> dict:
-        product = self.database.get_product(id)
-        if not product:
-            return {"error": "Product not found"}
-        return {"data": product}
+    def read_product(self, id: int) -> Product | None:
+        return self.database.get_product(id)
