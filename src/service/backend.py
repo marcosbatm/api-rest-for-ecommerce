@@ -35,3 +35,6 @@ class EcommerceBackend:
 
     def read_cart(self, userId: int) -> Cart:
         return self.database.get_cart(userId)
+
+    def clear_cart(self, userId: int) -> None:
+        self.database.clear_cart(userId)

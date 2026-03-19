@@ -22,6 +22,7 @@ def get_backend(request: Request) -> EcommerceBackend:
     description="Returns the user's cart with items ordered by addedAt descending, then id descending. An unknown userId returns an empty cart.",
     response_model=CartResponse,
     status_code=status.HTTP_200_OK,
+    response_description="User cart retrieved successfully",
 )
 def read_cart(
     userId: int, backend: EcommerceBackend = Depends(get_backend)
@@ -30,16 +31,17 @@ def read_cart(
     return CartResponse(data=cart)
 
 
-# @carts_router.delete(
-#     "/cart/{userId}",
-#     summary="Wipe a user's cart",
-#     description="Removes all items from the user's cart. Idempotent - wiping an empty or non-existent cart returns 204.",
-# )
-# def clear_cart(userId: int):
-#     return {
-#         "message": "Endpoint to clear the cart for a specific user by userId",
-#         "userId": userId,
-#     }
+@carts_router.delete(
+    "/cart/{userId}",
+    summary="Wipe a user's cart",
+    description="Removes all items from the user's cart. Idempotent - wiping an empty or non-existent cart returns 204.",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_description="Cart wiped successfully",
+)
+def clear_cart(userId: int, backend: EcommerceBackend = Depends(get_backend)):
+    backend.clear_cart(userId)
+    return
 
 
 # @carts_router.post(

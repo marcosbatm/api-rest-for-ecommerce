@@ -15,6 +15,8 @@ class Repository:
             self.config = config
             self.productDatabase: dict[int, Product] = {}
             self.last_product_id = 0
+            self.cartDatabase: dict[int, Cart] = {}
+            self.last_item_id = 0
         else:
             # Aquí podríamos implementar la lógica para conectar a una base de datos real
             raise NotImplementedError("Database connection not implemented yet")
@@ -70,3 +72,7 @@ class Repository:
     def get_cart(self, userId: int) -> Cart:
         # TODO: Implementar lógica real de carrito, con persistencia y manejo de items.
         return Cart(userId=userId, items=[], totalPrice=0.0)
+
+    def clear_cart(self, userId: int) -> None:
+        self.cartDatabase[userId] = Cart(userId=userId, items=[], totalPrice=0.0)
+        return
