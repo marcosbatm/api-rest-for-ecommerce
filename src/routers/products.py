@@ -1,7 +1,11 @@
 from fastapi import APIRouter, status, HTTPException, Request, Depends
 
 from src.models.errors import ErrorResponse
-from src.models.product import CreateProductRequest, CreateProductResponse, GetProductsResponse
+from src.models.product import (
+    CreateProductRequest,
+    CreateProductResponse,
+    GetProductsResponse,
+)
 from src.service.backend import EcommerceBackend
 
 products_router = APIRouter()
@@ -14,9 +18,20 @@ def get_backend(request: Request) -> EcommerceBackend:
 
 @products_router.post(
     "/products",
-    summary="Create a new product",
     response_model=CreateProductResponse,
     status_code=status.HTTP_201_CREATED,
+    summary="Create a new product",
+    response_description="Product created successfully",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Bad request error",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        }
+    },
 )
 def write_product(
     product: CreateProductRequest, backend: EcommerceBackend = Depends(get_backend)
