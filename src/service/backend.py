@@ -1,6 +1,6 @@
 from src.database.database import Repository
 from src.models.product import CreateProductRequest, Product, UpdateProductRequest
-from src.models.cart import Cart
+from src.models.cart import Cart, CartItem
 
 
 class EcommerceBackend:
@@ -13,13 +13,13 @@ class EcommerceBackend:
         return self.database.add_product(productRequest)
 
     def read_products(self) -> dict:
-        data = self.database.get_all_products()
+        data = self.database.snapshot_all_products()
         # Logica de negocio: ordenar productos por id ascendente
         data.sort(key=lambda p: p.id)
         return {"data": data}
 
     def read_product(self, id: int) -> Product | None:
-        return self.database.get_product(id)
+        return self.database.get_product_snapshot_or_fail(id)
 
     def update_product(
         self, id: int, productRequest: UpdateProductRequest
@@ -34,7 +34,11 @@ class EcommerceBackend:
     # CART METHODS:
 
     def read_cart(self, userId: int) -> Cart:
-        return self.database.get_cart(userId)
+        return self.database.get_cart_snapshot(userId)
 
     def clear_cart(self, userId: int) -> None:
         self.database.clear_cart(userId)
+
+    def add_item_to_cart_or_fail(self, userId: int, productId: int) -> CartItem:
+        product_snapshot = self.database.get_product_snapshot_or_fail(productId)
+        return self.database.add_snapshot_to_cart(userId, product_snapshot)

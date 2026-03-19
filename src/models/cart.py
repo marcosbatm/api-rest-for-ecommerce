@@ -13,11 +13,19 @@ class BaseCartItem(BaseModel):
     addedAt: datetime
 
 
+class CartItem(BaseCartItem):
+    pass
+
+
+class CartItemResponse(BaseModel):
+    data: CartItem
+
+
 class BaseCart(BaseModel):
     userId: int
-    items: list[BaseCartItem]
+    items: list[CartItem]
     totalPrice: float = Field(
-        minimum=0.0, description="Sum of unitPrice of all items, in USD"
+        ge=0.0, description="Sum of unitPrice of all items, in USD"
     )
 
 
@@ -31,11 +39,3 @@ class CartResponse(BaseModel):
 
 class AddProductToCartRequest(BaseModel):
     productId: int
-
-
-class CartItem(BaseCartItem):
-    pass
-
-
-class CartItemResponse(BaseModel):
-    data: CartItem

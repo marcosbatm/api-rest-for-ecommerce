@@ -1,5 +1,4 @@
 from fastapi import APIRouter, status, Request, Depends
-from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from src.models.cart import (
@@ -77,14 +76,24 @@ def clear_cart(userId: int, backend: EcommerceBackend = Depends(get_backend)):
 )
 def add_item_to_cart(
     userId: int,
-    item: AddProductToCartRequest,
+    request: AddProductToCartRequest,
     backend: EcommerceBackend = Depends(get_backend),
-):
-    backend.add_item_to_cart(userId, item)
-    return {
-        "message": "Endpoint to add an item to the cart for a specific user by userId",
-        "userId": userId,
-    }
+) -> CartItemResponse:
+    try:
+        new_item = backend.add_item_to_cart_or_fail(userId, request.productId)
+        return CartItemResponse(data=new_item)
+    except KeyError:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content=ErrorResponse(
+                type="about:blank",
+                title="Product not found",
+                status=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with id {request.productId} not found",
+                instance=f"/cart/{userId}/items",
+            ).model_dump(),
+            media_type="application/problem+json",
+        )
 
 
 # @carts_router.delete(
