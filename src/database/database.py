@@ -56,3 +56,10 @@ class Repository:
         )
         self.productDatabase[id] = updated_product
         return updated_product
+
+    def delete_product(self, id: int) -> bool:
+        existing_product = self.productDatabase.get(id)
+        if not existing_product:
+            return False
+        del self.productDatabase[id]
+        return True

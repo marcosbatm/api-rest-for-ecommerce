@@ -4,7 +4,7 @@ from src.models.product import CreateProductRequest, Product, UpdateProductReque
 
 class EcommerceBackend:
     def __init__(self, database: Repository):
-        self.database = database
+        self.database: Repository = database
 
     def create_product(self, productRequest: CreateProductRequest) -> Product | None:
         # Logica de negocio: round price to 2 decimal places
@@ -26,3 +26,6 @@ class EcommerceBackend:
         # Logica de negocio: round price to 2 decimal places
         productRequest.price = round(productRequest.price, 2)
         return self.database.update_product(id, productRequest)
+
+    def delete_product(self, id: int) -> bool:
+        return self.database.delete_product(id)

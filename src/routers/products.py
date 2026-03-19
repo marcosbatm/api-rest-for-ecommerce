@@ -161,6 +161,37 @@ def update_product(
     return ProductResponse(data=product)
 
 
-# @products_router.delete("/products/{id}", summary="Delete a product by ID")
-# def delete_product(id: int):
-#     return {"message": "Endpoint to delete a specific product by id", "id": id}
+@products_router.delete(
+    "/products/{id}",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a product by ID",
+    response_description="Product deleted successfully",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Product not found",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        }
+    },
+)
+def delete_product(id: int, backend: EcommerceBackend = Depends(get_backend)) -> dict:
+    success = backend.delete_product(id)
+    if not success:
+        payload = ErrorResponse(
+            type="about:blank",
+            title="Product not found",
+            status=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with id {id} not found",
+            instance=f"/products/{id}",
+        ).model_dump()
+
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content=payload,
+            media_type="application/problem+json",
+        )
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
