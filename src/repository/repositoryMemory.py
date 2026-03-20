@@ -1,33 +1,26 @@
 import time
 
-from src.config import ApiConfig
+from src.repository.repository import Repository
 from src.models.cart import Cart, CartItem
 from src.models.product import CreateProductRequest, Product, UpdateProductRequest
 
 
-class Repository:
+class RepositoryMemory(Repository):
     """
     Capa Repository: Encapsula la conexión a la base de datos.
     Utiliza config para configurar la conexión.
     Si no recibe config, asume una base de datos en memoria (dict).
     """
 
-    def __init__(self, config: ApiConfig | None = None):
-        if config is None or config.is_memory_db():
-            self.config = config
+    def __init__(self):
+        self.productDatabase: dict[int, Product] = {}
+        self.last_product_id = 0
 
-            self.productDatabase: dict[int, Product] = {}
-            self.last_product_id = 0
+        self.cartDatabase: dict[int, Cart] = {}
+        self.last_cart_id = 0
 
-            self.cartDatabase: dict[int, Cart] = {}
-            self.last_cart_id = 0
-
-            self.cartItemDatabase: dict[int, CartItem] = {}
-            self.last_item_id = 0
-
-        else:
-            # Aquí podríamos implementar la lógica para conectar a una base de datos real
-            raise NotImplementedError("Database connection not implemented yet")
+        self.cartItemDatabase: dict[int, CartItem] = {}
+        self.last_item_id = 0
 
     def add_product(self, productRequest: CreateProductRequest) -> Product:
         now = time.time()
@@ -79,7 +72,7 @@ class Repository:
         return True
 
     # CART METHODS:
-    def __get_cart_or_create(self, userId: int) -> Cart:
+    def _get_cart_or_create(self, userId: int) -> Cart:
         cart = self.cartDatabase.get(userId)
         if not cart:
             cart = Cart(userId=userId, items=[], totalPrice=0.0)
@@ -87,7 +80,7 @@ class Repository:
         return cart
 
     def get_cart_snapshot(self, userId: int) -> Cart:
-        cart = self.__get_cart_or_create(userId)
+        cart = self._get_cart_or_create(userId)
         return cart.model_copy(deep=True)
 
     def clear_cart(self, userId: int) -> None:
@@ -114,6 +107,6 @@ class Repository:
         return new_item
 
     def remove_item_from_cart_or_fail(self, userId: int, cartItemId: int) -> None:
-        cart = self.__get_cart_or_create(userId)
+        cart = self._get_cart_or_create(userId)
         removed_item = cart.items.pop(cartItemId)  # Si falla lanza KeyError
         cart.totalPrice -= removed_item.unitPrice

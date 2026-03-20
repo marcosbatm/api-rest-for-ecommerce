@@ -1,7 +1,7 @@
 import os
 
 
-class ApiConfig:
+class Config:
     # API service configuration
     host: str
     port: str

@@ -1,19 +1,19 @@
 import pytest
 from datetime import datetime
 
-from src.database.database import Repository
+from src.repository.repositoryMemory import RepositoryMemory
 from src.models.product import CreateProductRequest, Product
 
 
 def test_memory_repository_starts_empty():
-    repo = Repository(config=None)
+    repo = RepositoryMemory()
     products = repo.snapshot_all_products()
     assert isinstance(products, list)
     assert products == []
 
 
 def test_repository_add_product_success():
-    repo = Repository(config=None)
+    repo = RepositoryMemory()
     product_request = CreateProductRequest(
         sellerId=1,
         title="Test Product",
@@ -33,7 +33,7 @@ def test_repository_add_product_success():
 
 
 def test_repository_get_product_success():
-    repo = Repository(config=None)
+    repo = RepositoryMemory()
     product_request = CreateProductRequest(
         sellerId=1,
         title="Test Product",
@@ -47,14 +47,14 @@ def test_repository_get_product_success():
 
 
 def test_repository_get_invalid_product():
-    repo = Repository(config=None)
+    repo = RepositoryMemory()
     # This should fail, assert it raises exception using pytest:
     with pytest.raises(KeyError):
         repo.get_product_snapshot_or_fail(1)
 
 
 def test_repository_get_all_products_success():
-    repo = Repository(config=None)
+    repo = RepositoryMemory()
     product_requests = [
         CreateProductRequest(
             sellerId=1,
