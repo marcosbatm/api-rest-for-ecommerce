@@ -387,9 +387,7 @@ def test_remove_item_from_empty_cart_response(client: TestClient) -> None:
 def test_remove_item_not_in_cart_response(client: TestClient) -> None:
     """Check that removing an item that is not in the cart returns 404 with the expected schema."""
     # First, create a product but do not add it to the cart
-    created_product: Product = _create_product(
-        client, seller_id=1, title="Test Product", price=19.99
-    )
+    _: Product = _create_product(client, seller_id=1, title="Test Product", price=19.99)
     item_not_in_cart = 100000
 
     # Now, attempt to remove that product from the cart
