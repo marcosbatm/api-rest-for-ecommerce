@@ -59,7 +59,8 @@ class RepositoryDatabase(Repository):
         )
 
     def _to_cart(self, cart: CartORM) -> Cart:
-        items = {item.id: self._to_cart_item(item) for item in cart.items}
+        items = [self._to_cart_item(item) for item in cart.items]
+        items.sort(key=lambda x: (-x.addedAt.timestamp(), -x.id))
         return Cart(userId=cart.user_id, items=items, totalPrice=cart.total_price)
 
     def _get_cart_or_create_orm(self, session: Session, userId: int) -> CartORM:
