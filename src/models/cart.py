@@ -17,7 +17,7 @@ class BaseCart(BaseModel):
     userId: int
     items: list[BaseCartItem]
     totalPrice: float = Field(
-        minimum=0.0, description="Sum of unitPrice of all items, in USD"
+        ge=0.0, description="Sum of unitPrice of all items, in USD"
     )
 
 

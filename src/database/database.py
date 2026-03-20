@@ -1,4 +1,5 @@
 import time
+from src.config import ApiConfig
 from src.models.cart import Cart
 from src.models.product import CreateProductRequest, Product, UpdateProductRequest
 
@@ -10,8 +11,8 @@ class Repository:
     Si no recibe config, asume una base de datos en memoria (dict).
     """
 
-    def __init__(self, config: dict | None):
-        if config is None:
+    def __init__(self, config: ApiConfig | None = None):
+        if config is None or config.is_memory_db():
             self.config = config
             self.productDatabase: dict[int, Product] = {}
             self.last_product_id = 0

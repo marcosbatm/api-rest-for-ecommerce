@@ -12,6 +12,7 @@ from src.routers.products import products_router
 from src.routers.carts import carts_router
 # -------------
 
+from src.config import ApiConfig
 from src.database.database import Repository
 from src.service.backend import EcommerceBackend
 
@@ -22,7 +23,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan_function(app: FastAPI):
-    db = Repository(None)  # TODO: use config.
+    config = ApiConfig()
+    db = Repository(config)
     backend = EcommerceBackend(db)
     app.state.backend = backend
     yield
