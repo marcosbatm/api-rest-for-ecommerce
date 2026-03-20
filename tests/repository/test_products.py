@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime
 
 from src.database.database import Repository
@@ -6,7 +7,7 @@ from src.models.product import CreateProductRequest, Product
 
 def test_memory_repository_starts_empty():
     repo = Repository(config=None)
-    products = repo.get_all_products()
+    products = repo.snapshot_all_products()
     assert isinstance(products, list)
     assert products == []
 
@@ -40,15 +41,16 @@ def test_repository_get_product_success():
         price=9.99,
     )
     added_product: Product = repo.add_product(product_request)
-    retrieved_product: Product = repo.get_product(added_product.id)
+    retrieved_product: Product = repo.get_product_snapshot_or_fail(added_product.id)
     assert retrieved_product is not None
     assert retrieved_product == added_product
 
 
 def test_repository_get_invalid_product():
     repo = Repository(config=None)
-    retrieved_product = repo.get_product(1)  # ID que no existe
-    assert retrieved_product is None
+    # This should fail, assert it raises exception using pytest:
+    with pytest.raises(KeyError):
+        repo.get_product_snapshot_or_fail(1)
 
 
 def test_repository_get_all_products_success():
@@ -71,7 +73,7 @@ def test_repository_get_all_products_success():
     for req in product_requests:
         products.append(repo.add_product(req))
 
-    retrieved_products = repo.get_all_products()
+    retrieved_products = repo.snapshot_all_products()
     assert len(retrieved_products) == len(product_requests)
     for prod in products:
         assert any(rp == prod for rp in retrieved_products)

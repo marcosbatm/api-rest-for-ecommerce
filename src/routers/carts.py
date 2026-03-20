@@ -1,8 +1,12 @@
 from fastapi import APIRouter, status, Request, Depends
-from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from src.models.cart import CartResponse, Cart
+from src.models.cart import (
+    CartItemResponse,
+    CartResponse,
+    Cart,
+    AddProductToCartRequest,
+)
 from src.models.errors import ErrorResponse
 
 # from src.models.carts import
@@ -27,7 +31,7 @@ def get_backend(request: Request) -> EcommerceBackend:
 def read_cart(
     userId: int, backend: EcommerceBackend = Depends(get_backend)
 ) -> CartResponse:
-    cart = backend.read_cart(userId)
+    cart: Cart = backend.read_cart(userId)
     return CartResponse(data=cart)
 
 
@@ -44,26 +48,87 @@ def clear_cart(userId: int, backend: EcommerceBackend = Depends(get_backend)):
     return
 
 
-# @carts_router.post(
-#     "/cart/{userId}/items",
-#     summary="Add product to user's cart",
-#     description="Adds a new cart item with a snapshot of the product's current price and title. Each POST creates an independent item (duplicates allowed).",
-# )
-# def add_item_to_cart(userId: int, item: AddCartRequest):
-#     return {
-#         "message": "Endpoint to add an item to the cart for a specific user by userId",
-#         "userId": userId,
-#     }
+@carts_router.post(
+    "/cart/{userId}/items",
+    summary="Add product to user's cart",
+    description="Adds a new cart item with a snapshot of the product's current price and title. Each POST creates an independent item (duplicates allowed).",
+    response_model=CartItemResponse,
+    status_code=status.HTTP_201_CREATED,
+    response_description="Product added to cart successfully",
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Bad request error",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Product not found error",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        },
+    },
+)
+def add_item_to_cart(
+    userId: int,
+    request: AddProductToCartRequest,
+    backend: EcommerceBackend = Depends(get_backend),
+) -> CartItemResponse:
+    try:
+        new_item = backend.add_item_to_cart_or_fail(userId, request.productId)
+        return CartItemResponse(data=new_item)
+    except KeyError:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content=ErrorResponse(
+                type="about:blank",
+                title="Product not found",
+                status=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with id {request.productId} not found",
+                instance=f"/cart/{userId}/items",
+            ).model_dump(),
+            media_type="application/problem+json",
+        )
 
 
-# @carts_router.delete(
-#     "/cart/{userId}/items/{cartItemId}",
-#     summary="Delete an item from a user's cart",
-#     description="Removes a specific item from the user's cart. The item must belong to the specified user.",
-# )
-# def remove_item_from_cart(userId: int, cartItemId: int):
-#     return {
-#         "message": "Endpoint to remove an item from the cart for a specific user by userId and cartItemId",
-#         "userId": userId,
-#         "cartItemId": cartItemId,
-#     }
+@carts_router.delete(
+    "/cart/{userId}/items/{cartItemId}",
+    summary="Delete an item from a user's cart",
+    description="Removes a specific item from the user's cart. The item must belong to the specified user.",
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_description="Cart item deleted successfully",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Cart item not found in user's cart",
+            "content": {
+                "application/problem+json": {
+                    "schema": ErrorResponse.model_json_schema()
+                }
+            },
+        }
+    },
+)
+def remove_item_from_cart(
+    userId: int, cartItemId: int, backend: EcommerceBackend = Depends(get_backend)
+):
+    try:
+        backend.remove_item_from_cart_or_fail(userId, cartItemId)
+        return
+    except KeyError:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content=ErrorResponse(
+                type="about:blank",
+                title="Cart item not found",
+                status=status.HTTP_404_NOT_FOUND,
+                detail=f"Cart item with id {cartItemId} not found in user {userId}'s cart",
+                instance=f"/cart/{userId}/items/{cartItemId}",
+            ).model_dump(),
+            media_type="application/problem+json",
+        )

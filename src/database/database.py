@@ -1,6 +1,7 @@
 import time
+
 from src.config import ApiConfig
-from src.models.cart import Cart
+from src.models.cart import Cart, CartItem
 from src.models.product import CreateProductRequest, Product, UpdateProductRequest
 
 
@@ -14,10 +15,16 @@ class Repository:
     def __init__(self, config: ApiConfig | None = None):
         if config is None or config.is_memory_db():
             self.config = config
+
             self.productDatabase: dict[int, Product] = {}
             self.last_product_id = 0
+
             self.cartDatabase: dict[int, Cart] = {}
+            self.last_cart_id = 0
+
+            self.cartItemDatabase: dict[int, CartItem] = {}
             self.last_item_id = 0
+
         else:
             # Aquí podríamos implementar la lógica para conectar a una base de datos real
             raise NotImplementedError("Database connection not implemented yet")
@@ -37,11 +44,14 @@ class Repository:
         self.last_product_id += 1
         return product
 
-    def get_product(self, id: int) -> Product | None:
-        return self.productDatabase.get(id)
+    def get_product_snapshot_or_fail(self, id: int) -> Product:
+        product = self.productDatabase.get(id)
+        if not product:
+            raise KeyError(f"Product with id {id} not found")
+        return product.model_copy(deep=True)
 
-    def get_all_products(self) -> list[Product]:
-        return list(self.productDatabase.values())
+    def snapshot_all_products(self) -> list[Product]:
+        return [p.model_copy(deep=True) for p in self.productDatabase.values()]
 
     def update_product(
         self, id: int, productRequest: UpdateProductRequest
@@ -69,11 +79,41 @@ class Repository:
         return True
 
     # CART METHODS:
+    def __get_cart_or_create(self, userId: int) -> Cart:
+        cart = self.cartDatabase.get(userId)
+        if not cart:
+            cart = Cart(userId=userId, items=[], totalPrice=0.0)
+            self.cartDatabase[userId] = cart
+        return cart
 
-    def get_cart(self, userId: int) -> Cart:
-        # TODO: Implementar lógica real de carrito, con persistencia y manejo de items.
-        return Cart(userId=userId, items=[], totalPrice=0.0)
+    def get_cart_snapshot(self, userId: int) -> Cart:
+        cart = self.__get_cart_or_create(userId)
+        return cart.model_copy(deep=True)
 
     def clear_cart(self, userId: int) -> None:
         self.cartDatabase[userId] = Cart(userId=userId, items=[], totalPrice=0.0)
         return
+
+    def add_snapshot_to_cart(self, userId: int, product_snapshot: Product) -> CartItem:
+        cart = self.cartDatabase.get(userId)
+        if not cart:
+            cart = Cart(userId=userId, items={}, totalPrice=0.0)
+
+        new_item = CartItem(
+            id=self.last_item_id + 1,
+            productId=product_snapshot.id,
+            title=product_snapshot.title,
+            unitPrice=product_snapshot.price,
+            addedAt=time.time(),
+        )
+
+        cart.items[new_item.id] = new_item
+        cart.totalPrice += new_item.unitPrice
+        self.cartDatabase[userId] = cart
+        self.last_item_id += 1
+        return new_item
+
+    def remove_item_from_cart_or_fail(self, userId: int, cartItemId: int) -> None:
+        cart = self.__get_cart_or_create(userId)
+        removed_item = cart.items.pop(cartItemId)  # Si falla lanza KeyError
+        cart.totalPrice -= removed_item.unitPrice
