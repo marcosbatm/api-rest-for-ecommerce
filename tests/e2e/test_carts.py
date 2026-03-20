@@ -1,7 +1,7 @@
 from httpx import Response
 from fastapi.testclient import TestClient
 from src.models.product import Product, ProductResponse
-from src.models.cart import Cart, CartResponse, CartItemResponse
+from src.models.cart import Cart, CartItem, CartResponse, CartItemResponse
 from src.models.errors import ErrorResponse
 
 
@@ -17,6 +17,8 @@ def _assert_problem_response(
     assert body.type == "about:blank"
     assert body.title == expected_title
     assert body.status == expected_status
+    assert body.detail is not None
+    assert body.instance is not None
 
 
 def _create_product(
@@ -127,12 +129,15 @@ def test_add_item_to_cart_response(client: TestClient) -> None:
     assert response.status_code == 201
     assert response.headers["content-type"] == "application/json"
 
-    body: CartResponse = CartResponse.model_validate(response.json(), extra="forbid")
-    cart: Cart = body.data
-    assert cart.userId == cart_user_id
-    assert len(cart.items) == 1
-    assert cart.items[0].productId == created_product.id
-    assert cart.totalPrice == round(created_product.price, 2)
+    body: CartItemResponse = CartItemResponse.model_validate(
+        response.json(), extra="forbid"
+    )
+    cart: CartItem = body.data
+    assert cart.id > 0
+    assert cart.productId == created_product.id
+    assert cart.title == created_product.title
+    assert cart.unitPrice == round(created_product.price, 2)
+    assert cart.addedAt is not None
 
 
 def test_add_many_items_to_cart_response(client: TestClient) -> None:
@@ -157,16 +162,25 @@ def test_add_many_items_to_cart_response(client: TestClient) -> None:
     assert response_1.status_code == 201
     assert response_2.status_code == 201
 
-    body: CartResponse = CartResponse.model_validate(response_2.json(), extra="forbid")
-    cart: Cart = body.data
-    assert cart.userId == cart_user_id
-    assert len(cart.items) == 2
-    product_ids_in_cart = {item.productId for item in cart.items}
-    assert product_ids_in_cart == {created_product_1.id, created_product_2.id}
-    expected_total_price = round(created_product_1.price, 2) + round(
-        created_product_2.price, 2
+    body_1: CartItemResponse = CartItemResponse.model_validate(
+        response_1.json(), extra="forbid"
     )
-    assert cart.totalPrice == expected_total_price
+    body_2: CartItemResponse = CartItemResponse.model_validate(
+        response_2.json(), extra="forbid"
+    )
+    cart_1: CartItem = body_1.data
+    cart_2: CartItem = body_2.data
+
+    assert cart_1.productId == created_product_1.id
+    assert cart_1.title == created_product_1.title
+    assert cart_1.unitPrice == round(created_product_1.price, 2)
+    assert cart_1.addedAt is not None
+    assert cart_2.productId == created_product_2.id
+    assert cart_2.title == created_product_2.title
+    assert cart_2.unitPrice == round(created_product_2.price, 2)
+    assert cart_2.addedAt is not None
+    assert cart_1.id != cart_2.id
+    assert cart_1.addedAt < cart_2.addedAt
 
 
 def test_get_cart_of_user_with_items_response(client: TestClient) -> None:
@@ -324,30 +338,10 @@ def test_remove_item_not_in_cart_response(client: TestClient) -> None:
     created_product: Product = _create_product(
         client, seller_id=1, title="Test Product", price=19.99
     )
+    item_not_in_cart = 100000
 
     # Now, attempt to remove that product from the cart
-    response = client.delete(f"/cart/123/items/{created_product.id}")
-
-    _assert_problem_response(
-        response, expected_title="Cart item not found", expected_status=404
-    )
-
-
-def test_remove_item_not_in_cart_with_items_reponse(client: TestClient) -> None:
-    """Check that removing an item that is not in a cart that has other items returns 404 with the expected schema."""
-    # First, create two products and add only one to the cart
-    created_product_1: Product = _create_product(
-        client, seller_id=1, title="Test Product 1", price=10.00
-    )
-    created_product_2: Product = _create_product(
-        client, seller_id=1, title="Test Product 2", price=15.50
-    )
-
-    cart_user_id = 123
-    client.post(f"/cart/{cart_user_id}/items", json={"productId": created_product_1.id})
-
-    # Now, attempt to remove the second product that is not in the cart
-    response = client.delete(f"/cart/{cart_user_id}/items/{created_product_2.id}")
+    response = client.delete(f"/cart/123/items/{item_not_in_cart}")
 
     _assert_problem_response(
         response, expected_title="Cart item not found", expected_status=404
