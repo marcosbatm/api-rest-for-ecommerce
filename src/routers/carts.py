@@ -82,6 +82,18 @@ def add_item_to_cart(
     try:
         new_item = backend.add_item_to_cart_or_fail(userId, request.productId)
         return CartItemResponse(data=new_item)
+    except ValueError as ve:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=ErrorResponse(
+                type="about:blank",
+                title="Bad Request",
+                status=status.HTTP_400_BAD_REQUEST,
+                detail=str(ve),
+                instance=f"/cart/{userId}/items",
+            ).model_dump(),
+            media_type="application/problem+json",
+        )
     except KeyError:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,

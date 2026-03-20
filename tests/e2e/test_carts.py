@@ -104,7 +104,7 @@ def test_add_item_with_invalid_fields_to_cart_response(client: TestClient) -> No
 
 
 def test_add_item_with_negative_id_to_cart_response(client: TestClient) -> None:
-    """Check that adding a product to cart with a negative productId returns 422 with the expected schema."""
+    """Check that adding a product to cart with a negative productId returns 404 with the expected schema."""
     payload = {"productId": -5}  # productId should be a positive integer
     response = client.post("/cart/123/items", json=payload)
 
@@ -205,6 +205,58 @@ def test_get_cart_of_user_with_items_response(client: TestClient) -> None:
         userId=cart_user_id,
         items=[cartItemResponse.data],
         totalPrice=round(created_product.price, 2),
+    )
+
+    _assert_cart_response(response, expected_cart=expected_cart, expected_status=200)
+
+
+def test_get_cart_of_user_returns_items_in_correct_order(client: TestClient) -> None:
+    """Check that retrieving a cart returns items ordered by addedAt descending, then id descending."""
+    # First, create multiple products and add them to the cart in a specific order
+    created_product_1: Product = _create_product(
+        client, seller_id=1, title="Test Product 1", price=10.00
+    )
+    created_product_2: Product = _create_product(
+        client, seller_id=1, title="Test Product 2", price=15.50
+    )
+    created_product_3: Product = _create_product(
+        client, seller_id=1, title="Test Product 3", price=20.00
+    )
+
+    cart_user_id = 456
+    post_response_1: Response = client.post(
+        f"/cart/{cart_user_id}/items", json={"productId": created_product_1.id}
+    )
+    post_response_2: Response = client.post(
+        f"/cart/{cart_user_id}/items", json={"productId": created_product_2.id}
+    )
+    post_response_3: Response = client.post(
+        f"/cart/{cart_user_id}/items", json={"productId": created_product_3.id}
+    )
+
+    cartItemResponse_1: CartItemResponse = CartItemResponse.model_validate(
+        post_response_1.json(), extra="forbid"
+    )
+    cartItemResponse_2: CartItemResponse = CartItemResponse.model_validate(
+        post_response_2.json(), extra="forbid"
+    )
+    cartItemResponse_3: CartItemResponse = CartItemResponse.model_validate(
+        post_response_3.json(), extra="forbid"
+    )
+
+    # Now, retrieve the cart and check that items are in the correct order (product 3 should be first)
+    response = client.get(f"/cart/{cart_user_id}")
+
+    expected_cart = Cart(
+        userId=cart_user_id,
+        items=[
+            cartItemResponse_3.data,
+            cartItemResponse_2.data,
+            cartItemResponse_1.data,
+        ],
+        totalPrice=round(created_product_1.price, 2)
+        + round(created_product_2.price, 2)
+        + round(created_product_3.price, 2),
     )
 
     _assert_cart_response(response, expected_cart=expected_cart, expected_status=200)

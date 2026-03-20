@@ -40,6 +40,8 @@ class EcommerceBackend:
         self.repository.clear_cart(userId)
 
     def add_item_to_cart_or_fail(self, userId: int, productId: int) -> CartItem:
+        if userId <= 0 or productId <= 0:
+            raise ValueError("userId and productId must be positive integers")
         product_snapshot = self.repository.get_product_snapshot_or_fail(productId)
         return self.repository.add_snapshot_to_cart(userId, product_snapshot)
 
