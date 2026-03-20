@@ -13,6 +13,20 @@ services:
       - "${DATABASE_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce_api
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    environment:
+      DATABASE_HOST: postgres
+    ports:
+      - "${PORT:-8080}:80"
 
 volumes:
   postgres_data:
