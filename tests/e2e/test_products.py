@@ -1,5 +1,4 @@
 from httpx import Response
-import pytest
 from fastapi.testclient import TestClient
 from src.models.product import Product, ProductResponse, GetProductsResponse
 from src.models.errors import ErrorResponse
