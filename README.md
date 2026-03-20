@@ -88,6 +88,12 @@ La API ya está disponible para interactuar con ella. Al finalizar su uso, se pu
 
 **Todos los comandos se ejecutan desde el root del repo.**
 
+> Nota: Para levantar la API en local, levantar solo el servicio de postgres con:
+
+  ```bash
+  docker compose up -d postgres
+  ```
+
 Crear el entorno virtual de python:
 
   ```bash
@@ -103,15 +109,21 @@ Instalar dependencias:
   pip install -r requirements.txt
   ```
 
-Levantar el container de la base de datos:
+Luego, para ejecutar la API localmente se recomienda `fastapi dev` (modo desarrollo: recarga automática y logs más detallados); en cambio `fastapi run` es para ejecución más estable tipo producción (sin autoreload). Primero declarar las variables de entorno (`ENVIRONMENT`, `HOST`, `PORT` y `DATABASE_*`), siendo `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER` y `DATABASE_PASSWORD` obligatorias, y después correr todo en un solo comando (como la API corre fuera de Docker, usar `DATABASE_HOST=localhost`; si corre dentro de Compose, usar `DATABASE_HOST=postgres`, el resto deben ser iguales a las de `.env`).
 
-Para esto debemos tener un Daemon de Docker en ejecución (a.k.a, abrir Docker Desktop). Luego levantamos el container
+Por ejemplo:
 
   ```bash
-  docker compose up -d postgres
+  ENVIRONMENT=development \
+  HOST=localhost \
+  PORT=8080 \
+  DATABASE_HOST=localhost \
+  DATABASE_PORT=5432 \
+  DATABASE_NAME=ecommerce_db \
+  DATABASE_USER=myuser \
+  DATABASE_PASSWORD=mypassword \
+  fastapi dev src/main.py
   ```
-
-TODO: Agregar explicación para levantar la api conectandose a la bdd.
 
 ## Variables de entorno
 
@@ -119,6 +131,7 @@ TODO: Agregar explicación para levantar la api conectandose a la bdd.
 | --- | --- | ---: | --- | --- |
 | `ENVIRONMENT` | No | `development` | `development`, `testing`, `production` | Entorno de ejecución |
 | `MOCK_DB` | No | `false` | `true`, `false` | Mock de la database en memoria |
+| `HOST` | No | `0.0.0.0` | valores de host | Host en el que exponer la API |
 | `PORT` | No | `8080` | entero válido | Puerto que expone la API |
 | `DATABASE_PORT` | No | `5432` | entero válido | Puerto que expone PostgreSQL(*) |
 | `DATABASE_HOST` | Sí* | `postgres` | hostname/IP | Host de DB (*si `MOCK_DB=false`) |
@@ -134,7 +147,7 @@ Para correr los tests se provee de un servicio dedicado en el `compose.yaml`: `p
 
 Para desarrollar los tests se utilizó [pytest](https://docs.pytest.org/en/stable/). Para correr los tests:
 
-Primero levantar la base de datos de testing, esto lo hacemos con un Docker profile para que solo levante el servicio de testing:
+Primero levantar la base de datos de testing:
 
   ```bash
   docker compose --profile test up -d postgres_test
