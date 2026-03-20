@@ -21,7 +21,7 @@ def _assert_problem_response(
 def _assert_product_response(
     response: Response, payload: dict, expected_status: int
 ) -> None:
-    """Helper to assert that a response is a product with the expected fields."""
+    """Helper to assert that a response is a ProductResponse with the expected fields."""
     assert response.status_code == expected_status
     assert response.headers["content-type"] == "application/json"
 
@@ -38,7 +38,7 @@ def _assert_product_response(
     assert product.price == round(payload["price"], 2)
 
 
-def _create_product(
+def _create_and_assert_product(
     client: TestClient, *, seller_id: int, title: str, price: float
 ) -> Product:
     """Create a product through the API and return the created resource payload."""
@@ -137,11 +137,15 @@ def test_get_products_with_no_products_response(client: TestClient) -> None:
 
 def test_get_products_returns_all_products_by_ascending_id(client: TestClient) -> None:
     """Verify that listing returns all products sorted by ascending id."""
-    first: Product = _create_product(client, seller_id=1, title="Mouse", price=10.0)
-    second: Product = _create_product(
+    first: Product = _create_and_assert_product(
+        client, seller_id=1, title="Mouse", price=10.0
+    )
+    second: Product = _create_and_assert_product(
         client, seller_id=2, title="Keyboard", price=149.99
     )
-    third: Product = _create_product(client, seller_id=3, title="Speaker", price=89.99)
+    third: Product = _create_and_assert_product(
+        client, seller_id=3, title="Speaker", price=89.99
+    )
 
     response = client.get("/products")
 
@@ -171,7 +175,7 @@ def test_get_nonexistent_product_by_id_response(client: TestClient) -> None:
 
 def test_get_existing_product_by_id_response(client: TestClient) -> None:
     """Check that an existing product can be retrieved by id with status 200."""
-    created: Product = _create_product(
+    created: Product = _create_and_assert_product(
         client, seller_id=9, title="Headset", price=79.99
     )
 
@@ -208,7 +212,7 @@ def test_update_nonexistent_product_response(client: TestClient) -> None:
 
 def test_update_existing_product_with_invalid_data_response(client: TestClient) -> None:
     """Validate that updating an existing product with invalid data returns 400 with the expected schema."""
-    created: Product = _create_product(
+    created: Product = _create_and_assert_product(
         client, seller_id=10, title="Tablet", price=45.38
     )
 
@@ -232,7 +236,7 @@ def test_update_existing_product_with_missing_fields_response(
     client: TestClient,
 ) -> None:
     """Validate that updating an existing product with missing required fields returns 400 with the expected schema."""
-    created: Product = _create_product(
+    created: Product = _create_and_assert_product(
         client, seller_id=11, title="Smartphone", price=299.99
     )
 
@@ -253,7 +257,9 @@ def test_update_existing_product_with_missing_fields_response(
 
 def test_update_existing_product_returns_updated_fields(client: TestClient) -> None:
     """Test that product update returns the updated fields."""
-    created = _create_product(client, seller_id=5, title="Laptop", price=1200.0)
+    created = _create_and_assert_product(
+        client, seller_id=5, title="Laptop", price=1200.0
+    )
 
     update_payload = {
         "title": "Laptop Pro",
@@ -280,7 +286,9 @@ def test_update_existing_product_returns_updated_fields(client: TestClient) -> N
 
 def test_update_existing_product_persists_changes(client: TestClient) -> None:
     """Validate that updates to a product are persisted and reflected in subsequent retrievals."""
-    created = _create_product(client, seller_id=6, title="Camera", price=549.99)
+    created = _create_and_assert_product(
+        client, seller_id=6, title="Camera", price=549.99
+    )
 
     update_payload = {
         "title": "Camera X",
@@ -324,7 +332,9 @@ def test_delete_nonexistent_product_response(client: TestClient) -> None:
 
 def test_delete_existing_product_response(client: TestClient) -> None:
     """Confirm that deleting a product returns 204 and removes it from listing."""
-    created = _create_product(client, seller_id=7, title="Printer", price=199.99)
+    created = _create_and_assert_product(
+        client, seller_id=7, title="Printer", price=199.99
+    )
 
     delete_response = client.delete(f"/products/{created.id}")
     assert delete_response.status_code == 204
