@@ -98,16 +98,19 @@ def read_product(
     id: int,
     backend: EcommerceBackend = Depends(get_backend),
 ) -> ProductResponse:
-    product = backend.read_product(id)
-    if not product:
-        raise RequestValidationError(
-            [
-                {
-                    "loc": ["path", "id"],
-                    "msg": f"Product with id {id} not found",
-                    "type": "value_error",
-                }
-            ]
+    try:
+        product = backend.read_product_or_fail(id)
+    except KeyError:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content=ErrorResponse(
+                type="about:blank",
+                title="Product not found",
+                status=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with id {id} not found",
+                instance=f"/products/{id}",
+            ).model_dump(),
+            media_type="application/problem+json",
         )
     return ProductResponse(data=product)
 

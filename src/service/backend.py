@@ -18,7 +18,7 @@ class EcommerceBackend:
         data.sort(key=lambda p: p.id)
         return {"data": data}
 
-    def read_product(self, id: int) -> Product | None:
+    def read_product_or_fail(self, id: int) -> Product | None:
         return self.repository.get_product_snapshot_or_fail(id)
 
     def update_product(
