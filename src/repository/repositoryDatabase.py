@@ -1,9 +1,11 @@
+import logging
+
 from datetime import UTC, datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from src.config import Config
+from src.config_app import Config
 from src.repository.orm import (
     Base,
     CartItemORM,
@@ -18,9 +20,18 @@ from src.models.cart import Cart, CartItem
 from src.models.product import CreateProductRequest, Product, UpdateProductRequest
 
 
+logger = logging.getLogger(__name__)
+
+
 class RepositoryDatabase(Repository):
     def __init__(self, config: Config):
         self.config = config
+        logger.info(
+            "Initializing database repository host=%s port=%s db=%s",
+            config.database_host,
+            config.database_port,
+            config.database_name,
+        )
         self.engine = create_engine(
             f"postgresql://{config.database_user}:{config.database_password}"
             f"@{config.database_host}:{config.database_port}/{config.database_name}",
@@ -32,6 +43,7 @@ class RepositoryDatabase(Repository):
 
         # Crear tablas si no existen
         Base.metadata.create_all(self.engine)
+        logger.info("Database tables ensured")
 
     def _get_session(self) -> Session:
         return self.SessionLocal()
@@ -86,6 +98,7 @@ class RepositoryDatabase(Repository):
             session.add(product)
             session.commit()
             session.refresh(product)
+            logger.debug("DB product created id=%s", product.id)
             return self._to_product(product)
         finally:
             session.close()
@@ -95,6 +108,7 @@ class RepositoryDatabase(Repository):
         try:
             product = session.get(ProductORM, id)
             if product is None:
+                logger.warning("DB product not found id=%s", id)
                 raise KeyError(f"Product with id {id} not found")
             return self._to_product(product)
         finally:
@@ -104,6 +118,7 @@ class RepositoryDatabase(Repository):
         session = self._get_session()
         try:
             products = session.query(ProductORM).order_by(ProductORM.id.asc()).all()
+            logger.debug("DB snapshot all products count=%s", len(products))
             return [self._to_product(product) for product in products]
         finally:
             session.close()
@@ -115,6 +130,7 @@ class RepositoryDatabase(Repository):
         try:
             product = session.get(ProductORM, id)
             if not product:
+                logger.warning("DB product not found for update id=%s", id)
                 return None
 
             product.title = productRequest.title
@@ -124,6 +140,7 @@ class RepositoryDatabase(Repository):
 
             session.commit()
             session.refresh(product)
+            logger.debug("DB product updated id=%s", id)
             return self._to_product(product)
         finally:
             session.close()
@@ -133,10 +150,12 @@ class RepositoryDatabase(Repository):
         try:
             product = session.get(ProductORM, id)
             if not product:
+                logger.warning("DB product not found for delete id=%s", id)
                 return False
 
             session.delete(product)
             session.commit()
+            logger.debug("DB product deleted id=%s", id)
             return True
         finally:
             session.close()
@@ -162,6 +181,7 @@ class RepositoryDatabase(Repository):
             cart.total_price = 0.0
             cart.updated_at = utcnow()
             session.commit()
+            logger.debug("DB cart cleared userId=%s", userId)
         finally:
             session.close()
 
@@ -181,6 +201,12 @@ class RepositoryDatabase(Repository):
             cart.updated_at = utcnow()
             session.commit()
             session.refresh(new_item)
+            logger.debug(
+                "DB cart item created userId=%s cartItemId=%s productId=%s",
+                userId,
+                new_item.id,
+                product_snapshot.id,
+            )
             return self._to_cart_item(new_item)
         finally:
             session.close()
@@ -195,11 +221,13 @@ class RepositoryDatabase(Repository):
                 .first()
             )
             if item is None:
+                logger.warning("DB cart item not found userId=%s cartItemId=%s", userId, cartItemId)
                 raise KeyError(f"Cart item with id {cartItemId} not found")
 
             cart.total_price = max(0.0, cart.total_price - item.unit_price)
             cart.updated_at = utcnow()
             session.delete(item)
             session.commit()
+            logger.debug("DB cart item removed userId=%s cartItemId=%s", userId, cartItemId)
         finally:
             session.close()

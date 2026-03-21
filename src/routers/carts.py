@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, status, Request, Depends
 from fastapi.responses import JSONResponse
 
@@ -13,6 +15,7 @@ from src.models.errors import ErrorResponse
 from src.service.backend import EcommerceBackend
 
 carts_router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # TODO: Abstraer la dependencia y evitar repetir el get_backend en cada router y endpoint.
@@ -31,6 +34,7 @@ def get_backend(request: Request) -> EcommerceBackend:
 def read_cart(
     userId: int, backend: EcommerceBackend = Depends(get_backend)
 ) -> CartResponse:
+    logger.debug("GET /cart/%s", userId)
     cart: Cart = backend.read_cart(userId)
     return CartResponse(data=cart)
 
@@ -44,7 +48,9 @@ def read_cart(
     response_description="Cart wiped successfully",
 )
 def clear_cart(userId: int, backend: EcommerceBackend = Depends(get_backend)):
+    logger.info("DELETE /cart/%s", userId)
     backend.clear_cart(userId)
+    logger.info("Cart cleared userId=%s", userId)
     return
 
 
@@ -79,10 +85,23 @@ def add_item_to_cart(
     request: AddProductToCartRequest,
     backend: EcommerceBackend = Depends(get_backend),
 ) -> CartItemResponse:
+    logger.info("POST /cart/%s/items productId=%s", userId, request.productId)
     try:
         new_item = backend.add_item_to_cart_or_fail(userId, request.productId)
+        logger.info(
+            "Cart item created userId=%s cartItemId=%s productId=%s",
+            userId,
+            new_item.id,
+            request.productId,
+        )
         return CartItemResponse(data=new_item)
     except ValueError as ve:
+        logger.warning(
+            "Invalid request to add cart item userId=%s productId=%s error=%s",
+            userId,
+            request.productId,
+            ve,
+        )
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content=ErrorResponse(
@@ -95,6 +114,11 @@ def add_item_to_cart(
             media_type="application/problem+json",
         )
     except KeyError:
+        logger.warning(
+            "Product not found while adding to cart userId=%s productId=%s",
+            userId,
+            request.productId,
+        )
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content=ErrorResponse(
@@ -129,10 +153,13 @@ def add_item_to_cart(
 def remove_item_from_cart(
     userId: int, cartItemId: int, backend: EcommerceBackend = Depends(get_backend)
 ):
+    logger.info("DELETE /cart/%s/items/%s", userId, cartItemId)
     try:
         backend.remove_item_from_cart_or_fail(userId, cartItemId)
+        logger.info("Cart item deleted userId=%s cartItemId=%s", userId, cartItemId)
         return
     except KeyError:
+        logger.warning("Cart item not found userId=%s cartItemId=%s", userId, cartItemId)
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content=ErrorResponse(

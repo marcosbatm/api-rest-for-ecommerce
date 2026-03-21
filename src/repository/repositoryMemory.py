@@ -1,8 +1,12 @@
+import logging
 import time
 
 from src.repository.repository import Repository
 from src.models.cart import Cart, CartItem
 from src.models.product import CreateProductRequest, Product, UpdateProductRequest
+
+
+logger = logging.getLogger(__name__)
 
 
 class RepositoryMemory(Repository):
@@ -21,6 +25,7 @@ class RepositoryMemory(Repository):
 
         self.cartItemDatabase: dict[int, CartItem] = {}
         self.last_item_id = 0
+        logger.info("Initialized in-memory repository")
 
     def add_product(self, productRequest: CreateProductRequest) -> Product:
         now = time.time()
@@ -35,15 +40,18 @@ class RepositoryMemory(Repository):
         )
         self.productDatabase[product.id] = product
         self.last_product_id += 1
+        logger.debug("In-memory product created id=%s", product.id)
         return product
 
     def get_product_snapshot_or_fail(self, id: int) -> Product:
         product = self.productDatabase.get(id)
         if not product:
+            logger.warning("In-memory product not found id=%s", id)
             raise KeyError(f"Product with id {id} not found")
         return product.model_copy(deep=True)
 
     def snapshot_all_products(self) -> list[Product]:
+        logger.debug("In-memory snapshot all products count=%s", len(self.productDatabase))
         return [p.model_copy(deep=True) for p in self.productDatabase.values()]
 
     def update_product(
@@ -51,6 +59,7 @@ class RepositoryMemory(Repository):
     ) -> Product | None:
         existing_product = self.productDatabase.get(id)
         if not existing_product:
+            logger.warning("In-memory product not found for update id=%s", id)
             return None
         updated_product = Product(
             id=id,
@@ -62,13 +71,16 @@ class RepositoryMemory(Repository):
             updatedAt=time.time(),
         )
         self.productDatabase[id] = updated_product
+        logger.debug("In-memory product updated id=%s", id)
         return updated_product
 
     def delete_product(self, id: int) -> bool:
         existing_product = self.productDatabase.get(id)
         if not existing_product:
+            logger.warning("In-memory product not found for delete id=%s", id)
             return False
         del self.productDatabase[id]
+        logger.debug("In-memory product deleted id=%s", id)
         return True
 
     # CART METHODS:
@@ -77,6 +89,7 @@ class RepositoryMemory(Repository):
         if not cart:
             cart = Cart(userId=userId, items=[], totalPrice=0.0)
             self.cartDatabase[userId] = cart
+            logger.debug("In-memory cart created userId=%s", userId)
         return cart
 
     def get_cart_snapshot(self, userId: int) -> Cart:
@@ -85,6 +98,7 @@ class RepositoryMemory(Repository):
 
     def clear_cart(self, userId: int) -> None:
         self.cartDatabase[userId] = Cart(userId=userId, items=[], totalPrice=0.0)
+        logger.debug("In-memory cart cleared userId=%s", userId)
         return
 
     def add_snapshot_to_cart(self, userId: int, product_snapshot: Product) -> CartItem:
@@ -104,9 +118,16 @@ class RepositoryMemory(Repository):
         cart.totalPrice += new_item.unitPrice
         self.cartDatabase[userId] = cart
         self.last_item_id += 1
+        logger.debug(
+            "In-memory cart item created userId=%s cartItemId=%s productId=%s",
+            userId,
+            new_item.id,
+            product_snapshot.id,
+        )
         return new_item
 
     def remove_item_from_cart_or_fail(self, userId: int, cartItemId: int) -> None:
         cart = self._get_cart_or_create(userId)
         removed_item = cart.items.pop(cartItemId)  # Si falla lanza KeyError
         cart.totalPrice -= removed_item.unitPrice
+        logger.debug("In-memory cart item removed userId=%s cartItemId=%s", userId, cartItemId)

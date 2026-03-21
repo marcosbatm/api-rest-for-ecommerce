@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, status, Request, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -13,6 +15,7 @@ from src.service.backend import EcommerceBackend
 
 products_router = APIRouter()
 # products_router = APIRouter(prefix="/products", tags=["products"])
+logger = logging.getLogger(__name__)
 
 
 def get_backend(request: Request) -> EcommerceBackend:
@@ -40,7 +43,11 @@ def write_product(
     productRequest: CreateProductRequest,
     backend: EcommerceBackend = Depends(get_backend),
 ) -> ProductResponse:
+    logger.info("POST /products sellerId=%s", productRequest.sellerId)
     if productRequest.sellerId < 0:
+        logger.warning(
+            "Rejected product creation: invalid sellerId=%s", productRequest.sellerId
+        )
         raise RequestValidationError(
             [
                 {
@@ -52,6 +59,9 @@ def write_product(
         )
     product = backend.create_product(productRequest)
     if not product:
+        logger.warning(
+            "Failed to create product for sellerId=%s", productRequest.sellerId
+        )
         raise RequestValidationError(
             [
                 {
@@ -61,6 +71,7 @@ def write_product(
                 }
             ]
         )
+    logger.info("Product created id=%s", product.id)
     return ProductResponse(data=product)
 
 
@@ -74,6 +85,7 @@ def write_product(
 def read_products(
     backend: EcommerceBackend = Depends(get_backend),
 ) -> GetProductsResponse:
+    logger.debug("GET /products")
     return backend.read_products()
 
 
@@ -98,9 +110,11 @@ def read_product(
     id: int,
     backend: EcommerceBackend = Depends(get_backend),
 ) -> ProductResponse:
+    logger.debug("GET /products/%s", id)
     try:
         product = backend.read_product_or_fail(id)
     except KeyError:
+        logger.warning("Product not found id=%s", id)
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content=ErrorResponse(
@@ -112,6 +126,7 @@ def read_product(
             ).model_dump(),
             media_type="application/problem+json",
         )
+    logger.debug("Product retrieved id=%s", id)
     return ProductResponse(data=product)
 
 
@@ -146,8 +161,10 @@ def update_product(
     product: UpdateProductRequest,
     backend: EcommerceBackend = Depends(get_backend),
 ) -> ProductResponse:
+    logger.info("PUT /products/%s", id)
     product = backend.update_product(id, product)
     if not product:
+        logger.warning("Product not found for update id=%s", id)
         payload = ErrorResponse(
             type="about:blank",
             title="Product not found",
@@ -161,6 +178,7 @@ def update_product(
             content=payload,
             media_type="application/problem+json",
         )
+    logger.info("Product updated id=%s", id)
     return ProductResponse(data=product)
 
 
@@ -182,8 +200,10 @@ def update_product(
     },
 )
 def delete_product(id: int, backend: EcommerceBackend = Depends(get_backend)) -> dict:
+    logger.info("DELETE /products/%s", id)
     success = backend.delete_product(id)
     if not success:
+        logger.warning("Product not found for delete id=%s", id)
         payload = ErrorResponse(
             type="about:blank",
             title="Product not found",
@@ -197,4 +217,5 @@ def delete_product(id: int, backend: EcommerceBackend = Depends(get_backend)) ->
             content=payload,
             media_type="application/problem+json",
         )
+    logger.info("Product deleted id=%s", id)
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)

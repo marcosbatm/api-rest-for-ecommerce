@@ -12,31 +12,44 @@ from src.routers.products import products_router
 from src.routers.carts import carts_router
 # -------------
 
-from src.config import Config
+from src.config_app import Config
+from src.config_logging import configure_logging
 from src.repository.repository import Repository
 from src.repository.repositoryDatabase import RepositoryDatabase
 from src.repository.repositoryMemory import RepositoryMemory
 from src.service.backend import EcommerceBackend
 
-logging.basicConfig(level=logging.INFO)
+
+configure_logging()
 
 logger = logging.getLogger(__name__)
 
 
 def build_repository(config: Config) -> Repository:
+    logger.info("Initializing repository for environment=%s", config.environment)
     if config.is_memory_db():
+        logger.warning("Using in-memory repository (MOCK_DB=true)")
         return RepositoryMemory()
 
+    logger.info(
+        "Using database repository (host=%s port=%s db=%s)",
+        config.database_host,
+        config.database_port,
+        config.database_name,
+    )
     return RepositoryDatabase(config)
 
 
 @asynccontextmanager
 async def lifespan_function(app: FastAPI):
+    logger.info("Starting application lifespan")
     config = Config()
     repo = build_repository(config)
     backend = EcommerceBackend(repo)
     app.state.backend = backend
+    logger.info("Application startup completed")
     yield
+    logger.info("Application shutdown completed")
     # TODO: Close things.
 
 
@@ -47,6 +60,7 @@ app = FastAPI(lifespan=lifespan_function)
 async def request_validation_to_400_handler(
     request: Request, exc: RequestValidationError
 ):
+    logger.warning("Request validation error at %s: %s", request.url, exc)
     payload = ErrorResponse(
         type="about:blank",
         title="Bad Request",
