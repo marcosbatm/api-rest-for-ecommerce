@@ -13,6 +13,11 @@
   - [Ejecución local](#ejecución-local)
 - [Variables de entorno](#variables-de-entorno)
 - [Tests](#tests)
+- [Documentación de la API](#documentación-de-la-api)
+- [Desafios](#desafios)
+  - [Mejoras a la Solución](#mejoras-a-la-solución)
+  - [Uso de Docker Compose](#uso-de-docker-compose)
+  - [CI/CD con Github Actions para tests](#cicd-con-github-actions-para-tests)
 
 ## Contexto del Proyecto
 
@@ -164,3 +169,34 @@ Al finalizar, bajamos el servicio de testing con:
   ```bash
   docker compose --profile test down -v
   ```
+
+## Documentación de la API
+
+Al utilizar FastAPI, la misma provee documentación OpenAPI generada automáticamente. La misma se puede acceder en el path `/docs` de la App. La API se implementó buscando replicar la especificación OpenAPI provista por la cátedra.
+
+## Desafios
+
+A continuación se detalla los desafíos opcionales realizados:
+
+1. Usar Middleware para Manejar Errores: NO
+2. Mejoras a la Solución: SI
+3. Uso de Docker Compose: SI
+4. CI/CD con GitHub Actions para tests: SI
+
+### Mejoras a la Solución
+
+La solución no es perfecta. Algunas mejoras posibles y pendientes son:
+
+- Mejor manejo manejo de errores: Ya que en algunos casos, simplemente se atrapa el error automático de FastAPI (422) y se pone directamente en el campo `"detail"` de las ErrorResponse. Un mejor manejo de errores tendría mensajes detail más personalizados y formateados.
+- Se implementó dos tipos de capas Repository, una Memory y una Database. Para ello se utilizó polimorfismo y herencia, pero algunas partes del código se podrían refactorizar para obtener código de mayor calidad.
+- Faltó documentar con docstrings claras y extensas todas las funciones y clases definidas.
+- Los modelos que utiliza la app (`src/models/`) se usan como structs en lugar de clases. Se podría aplicar encapsulamiento exponiendo métodos o en su defecto definirlos como `@dataclass`.
+- Mejorar la separación en responsabilidades: algunos métodos de la capa Repository y/o Router se ocupan de realizar algunas verificaciones que podrían corresponder a servicio (o al menos debería haber mayor consistencia al respecto). Esto se correlaciona con el primer punto de manejo de errores (un Middleware podría resolver esto).
+
+### Uso de Docker Compose
+
+Como se vió [previamente](#ejecución-con-docker-compose-recomendado), se implementó un [compose](compose.yaml) file para levantar ambos servicios de forma aislada.
+
+### CI/CD con GitHub Actions para tests
+
+Se implementó un workflow [tests.yml](.github/workflows/tests.yml) que ejecuta los tests de forma automática ante cualquier push o pull request en `main`. El mismo corre en `ubuntu-latest`, clona el repositorio, configura Python, levanta el servicio de `postgres_testing` en Docker y luego corre los tests con las variables de entorno en `.env.example`.
