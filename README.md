@@ -127,7 +127,16 @@ Por ejemplo:
   DATABASE_NAME=ecommerce_db \
   DATABASE_USER=myuser \
   DATABASE_PASSWORD=mypassword \
-  fastapi dev src/main.py
+  fastapi dev src/main.py --host localhost --PORT 8080
+  ```
+
+Otra alternativa es exportar las environment variables directamente desde `.env`, lo que permite ejecutar:
+
+  ```bash
+  set -a
+  source .env
+  set +a
+  fastapi dev src/main.py --host $HOST --port $PORT
   ```
 
 ## Variables de entorno
