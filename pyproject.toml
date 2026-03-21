@@ -3,3 +3,7 @@ entrypoint = "src.main:app"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+addopts = "-vv -ra"
+filterwarnings = [
+	'ignore:Please use `import python_multipart` instead\.:PendingDeprecationWarning:starlette\.formparsers',
+]
