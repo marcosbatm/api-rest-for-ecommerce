@@ -1,0 +1,61 @@
+name: Run tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create .env from example
+        run: cp .env.example .env
+
+      - name: Create virtual environment and install dependencies
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install --upgrade pip
+          ./.venv/bin/pip install -r requirements.txt
+
+      - name: Start postgres_testing service
+        run: docker compose --profile test up -d postgres_testing
+
+      - name: Wait for postgres_testing to be ready
+        run: |
+          set -a
+          source .env
+          set +a
+
+          for i in {1..30}; do
+            if docker exec postgres_test_db pg_isready -U "$TEST_DATABASE_USER" -d "$TEST_DATABASE_NAME"; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "PostgreSQL did not become ready in time"
+          docker compose --profile test logs postgres_testing
+          exit 1
+
+      - name: Run tests
+        run: |
+          set -a
+          source .env
+          set +a
+
+          ./.venv/bin/pytest
+
+      - name: Stop test services
+        if: always()
+        run: docker compose --profile test down -v
