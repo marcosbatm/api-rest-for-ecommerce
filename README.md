@@ -164,7 +164,7 @@ Para desarrollar los tests se utilizó [pytest](https://docs.pytest.org/en/stabl
 Primero levantar la base de datos de testing:
 
   ```bash
-  docker compose --profile test up -d postgres_test
+  docker compose --profile test up -d postgres_testing
   ```
 
 Con el entorno virtual activado, corremos los tests:

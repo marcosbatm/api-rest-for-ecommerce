@@ -164,7 +164,7 @@ Tests were developed with [pytest](https://docs.pytest.org/en/stable/). To run t
 First, start the testing database:
 
   ```bash
-  docker compose --profile test up -d postgres_test
+  docker compose --profile test up -d postgres_testing
   ```
 
 With the virtual environment activated, run tests:
