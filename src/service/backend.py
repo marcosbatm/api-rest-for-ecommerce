@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal, ROUND_HALF_UP
 
 from src.repository.repository import Repository
 from src.models.product import CreateProductRequest, Product, UpdateProductRequest
@@ -17,8 +18,12 @@ class EcommerceBackend:
 
     def create_product(self, productRequest: CreateProductRequest) -> Product | None:
         logger.debug("Creating product sellerId=%s", productRequest.sellerId)
-        # Logica de negocio: round price to 2 decimal places
-        productRequest.price = round(productRequest.price, 2)
+        # Logica de negocio: round price to 2 decimal places (nearest, not banker's rounding)
+        productRequest.price = float(
+            Decimal(str(productRequest.price)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+        )
         product = self.repository.add_product(productRequest)
         logger.info("Product created id=%s", product.id)
         return product
@@ -39,8 +44,12 @@ class EcommerceBackend:
         self, id: int, productRequest: UpdateProductRequest
     ) -> Product | None:
         logger.debug("Updating product id=%s", id)
-        # Logica de negocio: round price to 2 decimal places
-        productRequest.price = round(productRequest.price, 2)
+        # Logica de negocio: round price to 2 decimal places (nearest, not banker's rounding)
+        productRequest.price = float(
+            Decimal(str(productRequest.price)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+        )
         product = self.repository.update_product(id, productRequest)
         if product is None:
             logger.warning("Product not found for update id=%s", id)

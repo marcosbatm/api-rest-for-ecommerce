@@ -1,7 +1,18 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from httpx import Response
 from fastapi.testclient import TestClient
 from src.models.product import Product, ProductResponse, GetProductsResponse
 from src.models.errors import ErrorResponse
+
+
+def round_to_two_decimals_half_up(value: float) -> float:
+    """Round a value to 2 decimal places using ROUND_HALF_UP rounding mode."""
+    return float(
+        Decimal(str(value)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+    )
 
 
 def _assert_problem_response(
@@ -35,7 +46,7 @@ def _assert_product_response(
     assert product.title == payload["title"]
     assert product.description == payload["description"]
     assert isinstance(product.price, (float))
-    assert product.price == round(payload["price"], 2)
+    assert product.price == round_to_two_decimals_half_up(payload["price"])
 
 
 def _create_and_assert_product(
@@ -86,7 +97,7 @@ def test_create_valid_product_rounds_price_to_2_decimals(client: TestClient) -> 
     response = client.post("/products", json=payload)
 
     body = response.json()["data"]
-    assert body["price"] == round(payload["price"], 2)
+    assert body["price"] == round_to_two_decimals_half_up(payload["price"])
 
 
 def test_create_product_with_negative_seller_id_response(client: TestClient) -> None:
@@ -281,7 +292,7 @@ def test_update_existing_product_returns_updated_fields(client: TestClient) -> N
     assert updated.sellerId == created.sellerId
     assert updated.title == update_payload["title"]
     assert updated.description == update_payload["description"]
-    assert updated.price == round(update_payload["price"], 2)
+    assert updated.price == round_to_two_decimals_half_up(update_payload["price"])
 
 
 def test_update_existing_product_persists_changes(client: TestClient) -> None:
@@ -317,7 +328,7 @@ def test_update_existing_product_persists_changes(client: TestClient) -> None:
     assert retrieved.sellerId == created.sellerId
     assert retrieved.title == update_payload["title"]
     assert retrieved.description == update_payload["description"]
-    assert retrieved.price == round(update_payload["price"], 2)
+    assert retrieved.price == round_to_two_decimals_half_up(update_payload["price"])
 
 
 # DELETE /products/{id}

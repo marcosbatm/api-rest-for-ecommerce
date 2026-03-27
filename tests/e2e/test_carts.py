@@ -1,8 +1,19 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from httpx import Response
 from fastapi.testclient import TestClient
 from src.models.product import Product, ProductResponse
 from src.models.cart import Cart, CartItem, CartResponse, CartItemResponse
 from src.models.errors import ErrorResponse
+
+
+def round_to_two_decimals_half_up(value: float) -> float:
+    """Round a value to 2 decimal places using ROUND_HALF_UP rounding mode."""
+    return float(
+        Decimal(str(value)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+    )
 
 
 def _assert_problem_response(
@@ -136,7 +147,7 @@ def test_add_item_to_cart_response(client: TestClient) -> None:
     assert cart.id > 0
     assert cart.productId == created_product.id
     assert cart.title == created_product.title
-    assert cart.unitPrice == round(created_product.price, 2)
+    assert cart.unitPrice == round_to_two_decimals_half_up(created_product.price)
     assert cart.addedAt is not None
 
 
@@ -173,11 +184,11 @@ def test_add_many_items_to_cart_response(client: TestClient) -> None:
 
     assert cart_1.productId == created_product_1.id
     assert cart_1.title == created_product_1.title
-    assert cart_1.unitPrice == round(created_product_1.price, 2)
+    assert cart_1.unitPrice == round_to_two_decimals_half_up(created_product_1.price)
     assert cart_1.addedAt is not None
     assert cart_2.productId == created_product_2.id
     assert cart_2.title == created_product_2.title
-    assert cart_2.unitPrice == round(created_product_2.price, 2)
+    assert cart_2.unitPrice == round_to_two_decimals_half_up(created_product_2.price)
     assert cart_2.addedAt is not None
     assert cart_1.id != cart_2.id
     assert cart_1.addedAt < cart_2.addedAt
@@ -204,7 +215,7 @@ def test_get_cart_of_user_with_items_response(client: TestClient) -> None:
     expected_cart = Cart(
         userId=cart_user_id,
         items=[cartItemResponse.data],
-        totalPrice=round(created_product.price, 2),
+        totalPrice=round_to_two_decimals_half_up(created_product.price),
     )
 
     _assert_cart_response(response, expected_cart=expected_cart, expected_status=200)
@@ -254,9 +265,9 @@ def test_get_cart_of_user_returns_items_in_correct_order(client: TestClient) -> 
             cartItemResponse_2.data,
             cartItemResponse_1.data,
         ],
-        totalPrice=round(created_product_1.price, 2)
-        + round(created_product_2.price, 2)
-        + round(created_product_3.price, 2),
+        totalPrice=round_to_two_decimals_half_up(created_product_1.price)
+        + round_to_two_decimals_half_up(created_product_2.price)
+        + round_to_two_decimals_half_up(created_product_3.price),
     )
 
     _assert_cart_response(response, expected_cart=expected_cart, expected_status=200)
@@ -281,7 +292,7 @@ def test_cart_of_user_with_items_is_persistent(client: TestClient) -> None:
     expected_cart = Cart(
         userId=cart_user_id,
         items=[cartItemResponse.data],
-        totalPrice=round(created_product.price, 2),
+        totalPrice=round_to_two_decimals_half_up(created_product.price),
     )
 
     response = client.get(f"/cart/{cart_user_id}")
@@ -316,8 +327,8 @@ def test_product_update_does_not_affect_cart_item_snapshot(client: TestClient) -
     expected_cart = Cart(
         userId=cart_user_id,
         items=[cartItemResponse.data],
-        totalPrice=round(
-            created_product.price, 2
+        totalPrice=round_to_two_decimals_half_up(
+            created_product.price
         ),  # Should still reflect original price
     )
 
