@@ -9,11 +9,7 @@ from src.models.errors import ErrorResponse
 
 def round_to_two_decimals_half_up(value: float) -> float:
     """Round a value to 2 decimal places using ROUND_HALF_UP rounding mode."""
-    return float(
-        Decimal(str(value)).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_UP
-        )
-    )
+    return float(Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 
 def _assert_problem_response(
@@ -428,6 +424,35 @@ def test_remove_item_from_cart_response(client: TestClient) -> None:
     response = client.delete(f"/cart/{cart_user_id}/items/{cartItemResponse.data.id}")
 
     assert response.status_code == 204
+
+    # Finally, retrieve the cart and check that it's empty
+    get_response = client.get(f"/cart/{cart_user_id}")
+    expected_cart = Cart(userId=cart_user_id, items=[], totalPrice=0.0)
+    _assert_cart_response(
+        get_response, expected_cart=expected_cart, expected_status=200
+    )
+
+
+def test_delete_product_removes_respective_item_from_cart_response(
+    client: TestClient,
+) -> None:
+    """Check that deleting a product removes the respective item from the cart."""
+    # First, create a product and add it to the cart
+    created_product: Product = _create_product(
+        client, seller_id=1, title="Test Product", price=19.99
+    )
+    cart_user_id = 123
+    post_response: Response = client.post(
+        f"/cart/{cart_user_id}/items", json={"productId": created_product.id}
+    )
+
+    _: CartItemResponse = CartItemResponse.model_validate(
+        post_response.json(), extra="forbid"
+    )
+
+    # Now, delete the product
+    delete_response = client.delete(f"/products/{created_product.id}")
+    assert delete_response.status_code == 204
 
     # Finally, retrieve the cart and check that it's empty
     get_response = client.get(f"/cart/{cart_user_id}")

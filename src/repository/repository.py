@@ -53,3 +53,8 @@ class Repository(ABC):
     @abstractmethod
     def remove_item_from_cart_or_fail(self, userId: int, cartItemId: int) -> None:
         pass
+
+    @abstractmethod
+    def remove_cart_items_by_product_id(self, productId: int) -> None:
+        """Elimina de todos los carritos los items relacionados al productId dado. Usado para mantener consistencia al eliminar un producto."""
+        pass

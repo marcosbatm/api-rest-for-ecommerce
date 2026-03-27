@@ -221,13 +221,40 @@ class RepositoryDatabase(Repository):
                 .first()
             )
             if item is None:
-                logger.warning("DB cart item not found userId=%s cartItemId=%s", userId, cartItemId)
+                logger.warning(
+                    "DB cart item not found userId=%s cartItemId=%s", userId, cartItemId
+                )
                 raise KeyError(f"Cart item with id {cartItemId} not found")
 
             cart.total_price = max(0.0, cart.total_price - item.unit_price)
             cart.updated_at = utcnow()
             session.delete(item)
             session.commit()
-            logger.debug("DB cart item removed userId=%s cartItemId=%s", userId, cartItemId)
+            logger.debug(
+                "DB cart item removed userId=%s cartItemId=%s", userId, cartItemId
+            )
+        finally:
+            session.close()
+
+    def remove_cart_items_by_product_id(self, productId):
+        session = self._get_session()
+        try:
+            items_to_remove = (
+                session.query(CartItemORM)
+                .filter(CartItemORM.product_id == productId)
+                .all()
+            )
+            for item in items_to_remove:
+                cart = session.query(CartORM).filter(CartORM.id == item.cart_id).first()
+                if cart:
+                    cart.total_price = max(0.0, cart.total_price - item.unit_price)
+                    cart.updated_at = utcnow()
+                session.delete(item)
+            session.commit()
+            logger.debug(
+                "DB cart items removed by productId=%s count=%s",
+                productId,
+                len(items_to_remove),
+            )
         finally:
             session.close()

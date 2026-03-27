@@ -51,7 +51,9 @@ class RepositoryMemory(Repository):
         return product.model_copy(deep=True)
 
     def snapshot_all_products(self) -> list[Product]:
-        logger.debug("In-memory snapshot all products count=%s", len(self.productDatabase))
+        logger.debug(
+            "In-memory snapshot all products count=%s", len(self.productDatabase)
+        )
         return [p.model_copy(deep=True) for p in self.productDatabase.values()]
 
     def update_product(
@@ -130,4 +132,23 @@ class RepositoryMemory(Repository):
         cart = self._get_cart_or_create(userId)
         removed_item = cart.items.pop(cartItemId)  # Si falla lanza KeyError
         cart.totalPrice -= removed_item.unitPrice
-        logger.debug("In-memory cart item removed userId=%s cartItemId=%s", userId, cartItemId)
+        logger.debug(
+            "In-memory cart item removed userId=%s cartItemId=%s", userId, cartItemId
+        )
+
+    def remove_cart_items_by_product_id(self, productId: int) -> None:
+        for cart in self.cartDatabase.values():
+            items_to_remove = [
+                item_id
+                for item_id, item in cart.items.items()
+                if item.productId == productId
+            ]
+            for item_id in items_to_remove:
+                removed_item = cart.items.pop(item_id)
+                cart.totalPrice -= removed_item.unitPrice
+                logger.debug(
+                    "In-memory cart item removed due to product delete userId=%s cartItemId=%s productId=%s",
+                    cart.userId,
+                    item_id,
+                    productId,
+                )

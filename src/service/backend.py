@@ -58,6 +58,8 @@ class EcommerceBackend:
         return product
 
     def delete_product(self, id: int) -> bool:
+        logger.debug("Deleting items related to product with id=%s", id)
+        self.repository.remove_cart_items_by_product_id(id)
         logger.debug("Deleting product id=%s", id)
         deleted = self.repository.delete_product(id)
         if deleted:
