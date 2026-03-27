@@ -12,4 +12,5 @@ RUN pip install --no-cache-dir --upgrade -r /api/requirements.txt
 
 COPY ./src /api/src
 
-CMD ["fastapi", "run", "src/main.py", "--port", "80"]
+ENTRYPOINT ["fastapi", "run", "src/main.py"]
+CMD ["--host", "0.0.0.0", "--port", "80"]
